@@ -46,14 +46,28 @@ parser.add_argument('--seed', type=int, default=0, help='Seed for the numpy rng.
 parser.add_argument('--num_maps', type=int, default=1, help='Number of gen_maps to generate.')
 args = parser.parse_args()
 
-NUM_MAPS = args.num_maps
+## F1tenth car
+# MAP_IMG_RESOLUTION = 0.1
+# MAP_IMG_DPI = 10/MAP_IMG_RESOLUTION
+# MAP_IMG_XY_LIM = 120
+# MAP_IMG_BOUNDARY_WIDTH = 1
+# WIDTH = 1.0 # half width
+
+## Real scale car
+MAP_IMG_RESOLUTION = 0.5
+MAP_IMG_DPI = 30/MAP_IMG_RESOLUTION
+MAP_IMG_XY_LIM = 120
+MAP_IMG_BOUNDARY_WIDTH = 3
 WIDTH = 4.0 # half width
+
+NUM_MAPS = args.num_maps
 # CHECKPOINTS = np.random.randint(5, 20)
-CHECKPOINTS = 15
-SCALE = 15.0 # inverse scale of track
+CHECKPOINTS = 10
+SCALE = 7.0 # inverse scale of track
 TRACK_RAD = np.maximum(CHECKPOINTS*40, 400)/SCALE
 TRACK_DETAIL_STEP = 10 / SCALE
 TRACK_TURN_RATE = np.random.uniform(0.05, 0.95)
+
 
 
 def load_map_random_gen(MAP_DIR, map_name, scale=1):
@@ -194,20 +208,21 @@ def create_track():
     return track_xy, track_xy_offset_in_np, track_xy_offset_out_np
 
 
-def convert_track(track, track_int, track_ext, iter):
-    resolution = 0.5
-    plot_gen_dpi = 30/resolution
-    
+def convert_track(track, track_int, track_ext, iter, 
+                  MAP_IMG_BOUNDARY_WIDTH, MAP_IMG_DPI, MAP_IMG_XY_LIM, MAP_IMG_RESOLUTION):
+    plot_gen_dpi = MAP_IMG_DPI
+    track_ext_xy = track_ext
+    xy_lim = MAP_IMG_XY_LIM
     
     # converts track to image and saves the centerline as waypoints
     fig, ax = plt.subplots(dpi=plot_gen_dpi)
-    fig.set_size_inches(20, 20)
-    ax.plot(*track_int.T, color='black', linewidth=3)
-    ax.plot(*track_ext.T, color='black', linewidth=3)
+    fig.set_size_inches(xy_lim/15, xy_lim/15)
+    ax.plot(*track_int.T, color='black', linewidth=MAP_IMG_BOUNDARY_WIDTH)
+    ax.plot(*track_ext.T, color='black', linewidth=MAP_IMG_BOUNDARY_WIDTH)
     plt.tight_layout()
     ax.set_aspect('equal')
-    ax.set_xlim(-300, 300)
-    ax.set_ylim(-300, 300)
+    ax.set_xlim(-xy_lim, xy_lim)
+    ax.set_ylim(-xy_lim, xy_lim)
     plt.axis('off')
     
 
@@ -235,8 +250,8 @@ def convert_track(track, track_int, track_ext, iter):
     # plt.show()
     
 
-    map_origin_x = -origin_x_pix * resolution
-    map_origin_y = -origin_y_pix * resolution
+    map_origin_x = -origin_x_pix * MAP_IMG_RESOLUTION
+    map_origin_y = -origin_y_pix * MAP_IMG_RESOLUTION
     
     # plt.show()
     plt.savefig('gen_maps/map' + str(iter) + '.png', dpi=plot_gen_dpi)
@@ -253,7 +268,7 @@ def convert_track(track, track_int, track_ext, iter):
     # create yaml file
     yaml = open('gen_maps/map' + str(iter) + '.yaml', 'w')
     yaml.write('image: map' + str(iter) + '.png\n')
-    yaml.write(f'resolution: {resolution} \n')
+    yaml.write(f'resolution: {MAP_IMG_RESOLUTION} \n')
     yaml.write('origin: [' + str(map_origin_x) + ',' + str(map_origin_y) + ', 0.000000]\n')
     yaml.write('negate: 0\noccupied_thresh: 0.45\nfree_thresh: 0.196')
     yaml.close()
@@ -262,16 +277,16 @@ def convert_track(track, track_int, track_ext, iter):
     ## saving track centerline as a csv in ros coords
     waypoints_csv = open('gen_maps/map' + str(iter) + '.csv', 'w')
     for row in xy_pixels:
-        waypoints_csv.write(str(resolution*row[0]) + ', ' + str(resolution*row[1]) + ', ' + str(WIDTH) + ', ' + str(WIDTH) + '\n')
+        waypoints_csv.write(str(MAP_IMG_RESOLUTION*row[0]) + ', ' + str(MAP_IMG_RESOLUTION*row[1]) + ', ' + str(WIDTH) + ', ' + str(WIDTH) + '\n')
     waypoints_csv.close()
 
     
-    cv_img_obs, waypoints, obs_list, map_origin, resolution = load_map_random_gen('gen_maps/', 'map' + str(iter))
+    cv_img_obs, waypoints, obs_list, map_origin, MAP_IMG_RESOLUTION = load_map_random_gen('gen_maps/', 'map' + str(iter))
     fig, ax2 = plt.subplots()
     ax2.imshow(cv_img_obs)
-    ax2.plot(((waypoints[:, 0] - map_origin[0])) / resolution , (-(waypoints[:, 1] - map_origin[1]) / resolution) + cv_img_obs.shape[1] , 'r.', markersize=1)    
+    ax2.plot(((waypoints[:, 0] - map_origin[0])) / MAP_IMG_RESOLUTION , (-(waypoints[:, 1] - map_origin[1]) / MAP_IMG_RESOLUTION) + cv_img_obs.shape[1] , 'r.', markersize=1)    
     for obsta in obs_list:
-        patch = plt.Circle(((obsta[0] - map_origin[0]) / resolution, -(obsta[1]- map_origin[1])/ resolution+ cv_img_obs.shape[1]) , obsta[2]/resolution, color='r', fill=False)
+        patch = plt.Circle(((obsta[0] - map_origin[0]) / MAP_IMG_RESOLUTION, -(obsta[1]- map_origin[1])/ MAP_IMG_RESOLUTION+ cv_img_obs.shape[1]) , obsta[2]/MAP_IMG_RESOLUTION, color='r', fill=False)
         ax2.add_patch(patch)
     plt.savefig('gen_maps/example' + str(iter) + '.png', dpi=300)
 
@@ -284,5 +299,6 @@ if __name__ == '__main__':
         except:
             print('Random generator failed, retrying')
             continue
-        convert_track(track, track_int, track_ext, ind)
+        convert_track(track, track_int, track_ext, ind, 
+                      MAP_IMG_BOUNDARY_WIDTH, MAP_IMG_DPI, MAP_IMG_XY_LIM, MAP_IMG_RESOLUTION)
         ind += 1
