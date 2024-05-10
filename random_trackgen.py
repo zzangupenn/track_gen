@@ -24,7 +24,7 @@
 """
 Generates random tracks.
 Adapted from https://gym.openai.com/envs/CarRacing-v0
-Author: Hongrui Zheng  
+Author: Hongrui Zheng, Zirui Zang
 """
 
 import cv2
@@ -37,27 +37,51 @@ from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
 import argparse
 
+if not os.path.exists('gen_maps'):
+    print('Creating gen_maps/ directory.')
+    os.makedirs('gen_maps')
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=0, help='Seed for the numpy rng.')
 parser.add_argument('--num_maps', type=int, default=1, help='Number of gen_maps to generate.')
 args = parser.parse_args()
 
+NUM_MAPS = args.num_maps
+WIDTH = 4.0 # half width
+# CHECKPOINTS = np.random.randint(5, 20)
+CHECKPOINTS = 15
+SCALE = 15.0 # inverse scale of track
+TRACK_RAD = np.maximum(CHECKPOINTS*40, 400)/SCALE
+TRACK_DETAIL_STEP = 10 / SCALE
+TRACK_TURN_RATE = np.random.uniform(0.05, 0.95)
+
+
+def load_map_random_gen(MAP_DIR, map_name, scale=1):
+    import yaml, cv2
+    with open(MAP_DIR + map_name + '.yaml') as stream:
+        info = yaml.load(stream, Loader=yaml.Loader)
+
+    cv_img = cv2.imread(MAP_DIR + info['image'], -1)
+    if os.path.exists(MAP_DIR + map_name + '_obs.csv'):
+        obs_list = np.loadtxt(MAP_DIR + map_name + '_obs.csv', delimiter=',', skiprows=0)
+    else:
+        obs_list = []
+    waypoints = np.loadtxt(MAP_DIR + map_name + '.csv', delimiter=',', skiprows=0)
+    map_origin = info['origin']
+    scale = info['resolution']
+    
+    return cv_img, waypoints, obs_list, map_origin, scale
+
+
+
+
 if args.seed != 0:
     np.random.seed(args.seed)
 
-if not os.path.exists('gen_maps'):
-    print('Creating gen_maps/ directory.')
-    os.makedirs('gen_maps')
 
-NUM_MAPS = args.num_maps
-WIDTH = 8.0
+
 def create_track():
-    CHECKPOINTS = np.random.randint(5, 20)
-    CHECKPOINTS = 15
-    SCALE = 6.0
-    TRACK_RAD = np.maximum(CHECKPOINTS*40, 400)/SCALE
-    TRACK_DETAIL_STEP = 21/SCALE
-    TRACK_TURN_RATE = np.random.uniform(0.05, 0.95)
+    
     start_alpha = 0.
 
     # Create checkpoints
@@ -171,9 +195,12 @@ def create_track():
 
 
 def convert_track(track, track_int, track_ext, iter):
-
+    resolution = 0.5
+    plot_gen_dpi = 30/resolution
+    
+    
     # converts track to image and saves the centerline as waypoints
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(dpi=plot_gen_dpi)
     fig.set_size_inches(20, 20)
     ax.plot(*track_int.T, color='black', linewidth=3)
     ax.plot(*track_ext.T, color='black', linewidth=3)
@@ -208,11 +235,11 @@ def convert_track(track, track_int, track_ext, iter):
     # plt.show()
     
 
-    map_origin_x = -origin_x_pix*0.05
-    map_origin_y = -origin_y_pix*0.05
+    map_origin_x = -origin_x_pix * resolution
+    map_origin_y = -origin_y_pix * resolution
     
     # plt.show()
-    plt.savefig('gen_maps/map' + str(iter) + '.png', dpi=80)
+    plt.savefig('gen_maps/map' + str(iter) + '.png', dpi=plot_gen_dpi)
 
     # TODO
     # # convert image using cv2
@@ -226,18 +253,27 @@ def convert_track(track, track_int, track_ext, iter):
     # create yaml file
     yaml = open('gen_maps/map' + str(iter) + '.yaml', 'w')
     yaml.write('image: map' + str(iter) + '.png\n')
-    yaml.write('resolution: 0.062500\n')
+    yaml.write(f'resolution: {resolution} \n')
     yaml.write('origin: [' + str(map_origin_x) + ',' + str(map_origin_y) + ', 0.000000]\n')
     yaml.write('negate: 0\noccupied_thresh: 0.45\nfree_thresh: 0.196')
     yaml.close()
     plt.close()
 
-    # saving track centerline as a csv in ros coords
+    ## saving track centerline as a csv in ros coords
     waypoints_csv = open('gen_maps/map' + str(iter) + '.csv', 'w')
     for row in xy_pixels:
-        waypoints_csv.write(str(0.05*row[0]) + ', ' + str(0.05*row[1]) + ', ' + str(WIDTH/2) + ', ' + str(WIDTH/2) + '\n')
+        waypoints_csv.write(str(resolution*row[0]) + ', ' + str(resolution*row[1]) + ', ' + str(WIDTH) + ', ' + str(WIDTH) + '\n')
     waypoints_csv.close()
 
+    
+    cv_img_obs, waypoints, obs_list, map_origin, resolution = load_map_random_gen('gen_maps/', 'map' + str(iter))
+    fig, ax2 = plt.subplots()
+    ax2.imshow(cv_img_obs)
+    ax2.plot(((waypoints[:, 0] - map_origin[0])) / resolution , (-(waypoints[:, 1] - map_origin[1]) / resolution) + cv_img_obs.shape[1] , 'r.', markersize=1)    
+    for obsta in obs_list:
+        patch = plt.Circle(((obsta[0] - map_origin[0]) / resolution, -(obsta[1]- map_origin[1])/ resolution+ cv_img_obs.shape[1]) , obsta[2]/resolution, color='r', fill=False)
+        ax2.add_patch(patch)
+    plt.savefig('gen_maps/example' + str(iter) + '.png', dpi=300)
 
 
 if __name__ == '__main__':

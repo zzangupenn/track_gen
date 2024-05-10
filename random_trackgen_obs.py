@@ -45,13 +45,12 @@ parser.add_argument('--num_maps', type=int, default=1, help='Number of gen_maps_
 args = parser.parse_args()
 
 NUM_MAPS = args.num_maps
-WIDTH = 8.0 # half width
+WIDTH = 4.0 # half width
 OBSTACLE_INTERVAL = 20 # average distance between obstacles
 LEAST_GAP_WIDTH = 8 # least gap width between obstacles and boundary
 
-# CHECKPOINTS = np.random.randint(5, 20)
-CHECKPOINTS = 20
-SCALE = 6.0
+CHECKPOINTS = 20 # number of turns
+SCALE = 6.0 # inverse scale of the map
 TRACK_RAD = np.maximum(CHECKPOINTS*40, 400)/SCALE
 TRACK_DETAIL_STEP = 21/SCALE
 TRACK_TURN_RATE = np.random.uniform(0.05, 0.95)
@@ -67,7 +66,10 @@ def load_map_random_gen(MAP_DIR, map_name, scale=1):
         info = yaml.load(stream, Loader=yaml.Loader)
 
     cv_img = cv2.imread(MAP_DIR + info['image'], -1)
-    obs_list = np.loadtxt(MAP_DIR + map_name + '_obs.csv', delimiter=',', skiprows=0)
+    if os.path.exists(MAP_DIR + map_name + '_obs.csv'):
+        obs_list = np.loadtxt(MAP_DIR + map_name + '_obs.csv', delimiter=',', skiprows=0)
+    else:
+        obs_list = []
     waypoints = np.loadtxt(MAP_DIR + map_name + '.csv', delimiter=',', skiprows=0)
     map_origin = info['origin']
     scale = info['resolution']
@@ -197,7 +199,7 @@ def create_track():
 
 def convert_track(track, track_int, track_ext, iter):
     resolution = 0.5
-    plot_gen_dpi = 50/resolution
+    plot_gen_dpi = 30/resolution
 
     print('track', track.shape)
     # converts track to image and saves the centerline as waypoints
@@ -231,8 +233,8 @@ def convert_track(track, track_int, track_ext, iter):
             new_xy_pixels.append((xy_pixels[ind] + xy_pixels[ind+1])/2)
         xy_pixels = np.array(new_xy_pixels)
         
-    map_origin_x = -origin_x_pix*resolution
-    map_origin_y = -origin_y_pix*resolution
+    map_origin_x = -origin_x_pix * resolution
+    map_origin_y = -origin_y_pix * resolution
     
     plt.savefig('gen_maps_obs/map' + str(iter) + '.png', dpi=plot_gen_dpi)
 
