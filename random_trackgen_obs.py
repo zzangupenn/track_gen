@@ -46,13 +46,13 @@ args = parser.parse_args()
 
 NUM_MAPS = args.num_maps
 WIDTH = 4.0 # half width
-OBSTACLE_INTERVAL = 20 # average distance between obstacles
-LEAST_GAP_WIDTH = 8 # least gap width between obstacles and boundary
+OBSTACLE_INTERVAL = 50 # average distance between obstacles
+LEAST_GAP_WIDTH = 5 # least gap width between obstacles and boundary
 
-CHECKPOINTS = 20 # number of turns
-SCALE = 6.0 # inverse scale of the map
+CHECKPOINTS = 15 # number of turns
+SCALE = 10.0 # inverse scale of the map
 TRACK_RAD = np.maximum(CHECKPOINTS*40, 400)/SCALE
-TRACK_DETAIL_STEP = 21/SCALE
+TRACK_DETAIL_STEP = 10 / SCALE
 TRACK_TURN_RATE = np.random.uniform(0.05, 0.95)
 start_alpha = 0.
 
@@ -312,7 +312,7 @@ def convert_track(track, track_int, track_ext, iter):
     cv2.imwrite('gen_maps_obs/map_obs' + str(iter) + '.png', cv_img_bw)
     
     ax.plot(centerline_traj[:, 0], centerline_traj[:, 1], 'r.', markersize=3)
-    plt.show()
+    # plt.show()
     plt.close()
     
     # save obstacle locations and sizes
