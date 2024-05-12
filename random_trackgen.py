@@ -51,7 +51,7 @@ WIDTH = 4.0 # half width in meters
 OUTPUT_F1TENTH_SCALE = True
 if OUTPUT_F1TENTH_SCALE: 
     additional_scale = 1/7
-    WIDTH = WIDTH * additional_scale
+    WIDTH = WIDTH / additional_scale
 else:
     additional_scale = 1
 
