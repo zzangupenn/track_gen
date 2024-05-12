@@ -46,18 +46,11 @@ parser.add_argument('--seed', type=int, default=0, help='Seed for the numpy rng.
 parser.add_argument('--num_maps', type=int, default=1, help='Number of gen_maps to generate.')
 args = parser.parse_args()
 
-## F1tenth car
-# MAP_IMG_RESOLUTION = 0.1
-# MAP_IMG_DPI = 10/MAP_IMG_RESOLUTION
-# MAP_IMG_XY_LIM = 120
-# MAP_IMG_BOUNDARY_WIDTH = 1
-# WIDTH = 1.0 # half width
-
 ## Real scale car
 MAP_IMG_RESOLUTION = 0.5
-MAP_IMG_DPI = 30/MAP_IMG_RESOLUTION
-MAP_IMG_XY_LIM = 120
-MAP_IMG_BOUNDARY_WIDTH = 3
+MAP_IMG_DPI = 25.4 * 4 / MAP_IMG_RESOLUTION
+MAP_IMG_XY_LIM = 150
+MAP_IMG_BOUNDARY_WIDTH = 2
 WIDTH = 4.0 # half width
 
 NUM_MAPS = args.num_maps
@@ -65,7 +58,7 @@ NUM_MAPS = args.num_maps
 CHECKPOINTS = 10
 SCALE = 7.0 # inverse scale of track
 TRACK_RAD = np.maximum(CHECKPOINTS*40, 400)/SCALE
-TRACK_DETAIL_STEP = 10 / SCALE
+TRACK_DETAIL_STEP = 1.
 TRACK_TURN_RATE = np.random.uniform(0.05, 0.95)
 
 
@@ -213,6 +206,7 @@ def convert_track(track, track_int, track_ext, iter,
     plot_gen_dpi = MAP_IMG_DPI
     track_ext_xy = track_ext
     xy_lim = MAP_IMG_XY_LIM
+    print(np.min(track_ext_xy, axis=0), np.max(track_ext_xy, axis=0))
     
     # converts track to image and saves the centerline as waypoints
     fig, ax = plt.subplots(dpi=plot_gen_dpi)
