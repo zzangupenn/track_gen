@@ -46,12 +46,19 @@ parser.add_argument('--seed', type=int, default=0, help='Seed for the numpy rng.
 parser.add_argument('--num_maps', type=int, default=1, help='Number of gen_maps to generate.')
 args = parser.parse_args()
 
-## Real scale car
-MAP_IMG_RESOLUTION = 0.5
-MAP_IMG_DPI = 25.4 * 4 / MAP_IMG_RESOLUTION
+
+WIDTH = 4.0 # half width in meters
+OUTPUT_F1TENTH_SCALE = True
+if OUTPUT_F1TENTH_SCALE: 
+    additional_scale = 1/7
+    WIDTH = WIDTH * additional_scale
+else:
+    additional_scale = 1
+
+MAP_IMG_RESOLUTION = 0.25
+MAP_IMG_DPI = 25.4 * 2 / MAP_IMG_RESOLUTION
 MAP_IMG_XY_LIM = 150
 MAP_IMG_BOUNDARY_WIDTH = 2
-WIDTH = 4.0 # half width
 
 NUM_MAPS = args.num_maps
 # CHECKPOINTS = np.random.randint(5, 20)
@@ -244,8 +251,8 @@ def convert_track(track, track_int, track_ext, iter,
     # plt.show()
     
 
-    map_origin_x = -origin_x_pix * MAP_IMG_RESOLUTION
-    map_origin_y = -origin_y_pix * MAP_IMG_RESOLUTION
+    map_origin_x = -origin_x_pix * MAP_IMG_RESOLUTION * additional_scale
+    map_origin_y = -origin_y_pix * MAP_IMG_RESOLUTION * additional_scale
     
     # plt.show()
     plt.savefig('gen_maps/map' + str(iter) + '.png', dpi=plot_gen_dpi)
@@ -262,7 +269,7 @@ def convert_track(track, track_int, track_ext, iter,
     # create yaml file
     yaml = open('gen_maps/map' + str(iter) + '.yaml', 'w')
     yaml.write('image: map' + str(iter) + '.png\n')
-    yaml.write(f'resolution: {MAP_IMG_RESOLUTION} \n')
+    yaml.write(f'resolution: {MAP_IMG_RESOLUTION * additional_scale} \n')
     yaml.write('origin: [' + str(map_origin_x) + ',' + str(map_origin_y) + ', 0.000000]\n')
     yaml.write('negate: 0\noccupied_thresh: 0.45\nfree_thresh: 0.196')
     yaml.close()
@@ -271,9 +278,8 @@ def convert_track(track, track_int, track_ext, iter,
     ## saving track centerline as a csv in ros coords
     waypoints_csv = open('gen_maps/map' + str(iter) + '.csv', 'w')
     for row in xy_pixels:
-        waypoints_csv.write(str(MAP_IMG_RESOLUTION*row[0]) + ', ' + str(MAP_IMG_RESOLUTION*row[1]) + ', ' + str(WIDTH) + ', ' + str(WIDTH) + '\n')
+        waypoints_csv.write(str(MAP_IMG_RESOLUTION*row[0] * additional_scale) + ', ' + str(MAP_IMG_RESOLUTION * additional_scale*row[1]) + ', ' + str(WIDTH) + ', ' + str(WIDTH) + '\n')
     waypoints_csv.close()
-
     
     cv_img_obs, waypoints, obs_list, map_origin, MAP_IMG_RESOLUTION = load_map_random_gen('gen_maps/', 'map' + str(iter))
     fig, ax2 = plt.subplots()
