@@ -9,8 +9,8 @@ This repository contains a Python script for generating random race tracks. The 
 - Configurable parameters for track generation
 
 ## Example
-<img src="./imgs/map0.png" width="500" /> <img src="./imgs/map_obs0.png" width="500" />
-<img src="./imgs/example1.png" width="500" /> <img src="./imgs/example2.png" width="500" />
+<img src="./imgs/map0.png" width="400" /> <img src="./imgs/map_obs0.png" width="400" />
+<img src="./imgs/example1.png" width="400" /> <img src="./imgs/example2.png" width="400" />
 
 ## Usage
 To generate random tracks, run the script with the desired parameters:
