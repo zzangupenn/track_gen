@@ -11,6 +11,7 @@ This repository contains a Python script for generating random race tracks. The 
 ## Example
 <img src="./imgs/map0.png" width="400" /> <img src="./imgs/map_obs0.png" width="400" />
 <img src="./imgs/example1.png" width="400" /> <img src="./imgs/example2.png" width="400" />
+The green dot is a 1-meter circle indicating map's origin.
 
 ## Usage
 To generate random tracks, run the script with the desired parameters:
